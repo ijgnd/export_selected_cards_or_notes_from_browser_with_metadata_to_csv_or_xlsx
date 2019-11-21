@@ -1,0 +1,34 @@
+This add-on offers to export the the selection from the browser - either the cards or the underlying notes. When exporting cards you can export metadata and not just field contents or the question/answer template. So you can export interval, due dates, card id, etc.
+
+you can export to csv or xlsx (Excel format). This might be useful in some cases to avoid problems with quoting and field separators.
+
+When exporting the underlying notes and you export to csv one file per note type is exported (or one xlsx file with one worksheet per notetype).
+
+When exporting to csv you can set multiple characters as the field delimiter in the add-on config. You can also set some parameters for python's csv exporter in the add-on config.
+
+This add-on does NOT allow to import from xlsx. There's no add-on that offers this and it's unlikely that such an add-on would be useful: As far as I see in 2019-11 there's no FOSS library that makes reading richtext from Excel files easy.
+
+I made this add-on for myself. So it's not much tested. Use it at your own risk. 
+
+<b>Errors, Bugs, Issues</b>
+Feedback, improvements, and error reports are welcome. It's best to post these in <a href="https://github.com/ijgnd/export_selected_cards_or_notes_from_browser_with_metadata_to_csv_or_xlsx" rel="nofollow">my github repo</a> or send me a message via reddit (/u/ijgnord/) where I can respond multiple times.
+
+<b>Known Limitations</b>
+When exporting cards this add-on is slow. Exporting over 40000 cards took between 2 and 4 minutes on my computer! It's slow because I reused existing components that were designed for a different use case.
+
+<b>Alternatives</b>
+If you know some sql you can query the Anki database directly, see <a href="https://github.com/ankidroid/Anki-Android/wiki/Database-Structure" rel="nofollow">a brief description of the Anki2 database structure.</a>.
+
+There are about 20 different exporting related add-ons. It's likely that in many cases this add-on is not the best suited for you. If this add-on doesn't work for you search the other available ones. I really like Arthur Milchior's <a href="https://ankiweb.net/shared/info/1983204951" rel="nofollow">Export cards selected in the Browser</a>.
+
+For exporting metadata in 2019-11 there's only (<a href="https://ankiweb.net/shared/info/46837454" rel="nofollow">Export Browser's card list contents to CSV file Enhanced</a>) which is only available for the old version 2.0 which will <a href="https://anki.tenderapp.com/discussions/announcements/136-sunsetting-anki-20-support" rel="nofollow">stop syncing in 2020-01-01</a>.
+
+There's also an unpublished add-on by glutanimate named <a href="https://github.com/glutanimate/custom-text-backup" rel="nofollow">custom-text-backup</a> (for 2.0 and 2.1) that allows to export some metadata. But this doesn't export to a table, spreadsheet, or csv file and instead creates free-form text (like one file per note/card).
+
+For an overview of export related add-ons see <a href="" rel="nofollow">this list</a> (as of 2019-11-15)
+
+<b>Configuration</b>
+You can set which fields or metadata to export from the add-on configuration. You can also configure some parameters for the csv export in the add-on settings. The settings window has some explanations.
+
+<b>acknowledgements</b>
+This add-on uses some modified functions from Anki and the python package XlsxWriter (Copyright (c) 2013, John McNamara) which is released under a BSD license.
