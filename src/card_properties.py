@@ -1,14 +1,12 @@
 import time
 
 from aqt import mw
-from anki.utils import fmtTimeSpan
 
 from .helper_functions import (
     allRevsForCard,
     due_day, 
     fmt_long_string,
     percent_overdue,
-    stattime, 
     valueForOverdue, 
 )
 
@@ -32,8 +30,6 @@ def current_card_deck_properties(card):
     def date(tm):
         return time.strftime("%Y-%m-%d", time.localtime(tm))
 
-    fmt = lambda x, **kwargs: fmtTimeSpan(x, short=True, **kwargs)
-
     template = card.template()
     model = card.model()
     p = dict()
@@ -43,14 +39,14 @@ def current_card_deck_properties(card):
     p["c_LatestReview"] = date(last/1000) if last else ""
     p["allrevs"] = allRevsForCard(card.id)
     p["c_Due"] = due_day(card)
-    p["c_Interval_fmt"] = fmt(card.ivl * 86400) if card.queue == 2 else ""
+    p["c_Interval_fmt"] = mw.col.backend.format_time_span(card.ivl * 86400) if card.queue == 2 else ""
     p["c_Interval_in_Days"] = card.ivl
     p["c_Ease"] = "%d" % (card.factor/10.0)
     p["c_Ease_percent"] = str("%d%%" % (card.factor/10.0))
     p["c_Reviews"] = "%d" % card.reps
     p["c_Lapses"] = "%d" % card.lapses
-    p["c_AverageTime"] = stattime(total / float(cnt)) if cnt else ""
-    p["c_TotalTime"] = stattime(total) if cnt else ""
+    p["c_AverageTime"] = mw.col.backend.format_time_span(total / float(cnt)) if cnt else ""
+    p["c_TotalTime"] = mw.col.backend.format_time_span(total) if cnt else ""
     p["c_Position"] = card.due if card.queue == 0 else ""
     p["c_CardType"] = template['name']
     p["c_NoteType"] = model['name']
@@ -79,7 +75,7 @@ def current_card_deck_properties(card):
         conf = mw.col.decks.confForDid(card.did)
     formatted_steps = ''
     for i in conf['new']['delays']:
-        formatted_steps += ' -- ' + fmtTimeSpan(i * 60, short=True)
+        formatted_steps += ' -- ' + mw.col.backend.format_time_span(i * 60)
     p["conf"] = conf
     p["d_OptionGroupID"] = conf['id']
     p["d_OptionGroupName"] = conf['name']

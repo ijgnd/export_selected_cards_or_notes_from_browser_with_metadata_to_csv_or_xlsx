@@ -5,7 +5,6 @@ import os
 import time
 
 from anki.lang import _
-from anki.utils import fmtTimeSpan
 from aqt import mw
 from aqt.utils import showInfo
 from aqt.qt import *
@@ -51,41 +50,6 @@ def fmt_long_string(name, value):
         out += name[l:l+u] + '\n'
         l += u
     return out.rstrip('\n')
-
-
-def deck_name_and_source_for_filtered(card, p):
-    max_length = gc('deck_names_length', 0)
-    rows = []
-    if len(p.deckname) > max_length:
-        rows.append(("Deck:", p.deckname_fmt))
-    else:
-        rows.append(("Deck:", p.deckname))
-    if card.odid:
-        if len(p.source_deck_name) > max_length:
-            rows.append(("Source Deck", p.source_deck_name_fmt))
-        else:
-            rows.append(("Source Deck", p.source_deck_name))
-    return make_two_column_table(rows)
-
-
-# function time from anki/stats.py
-def stattime(tm):
-    str = ""
-    if tm >= 60:
-        str = fmtTimeSpan((tm / 60)*60, short=True, point=-1, unit=1)
-    if tm % 60 != 0 or not str:
-        str += fmtTimeSpan(tm % 60, point=2 if not str else -1, short=True)
-    return str
-
-
-# from warrior-mode
-def formatIvlString(ivl):
-    if ivl == 0:
-        return "0d"
-    elif ivl > 0:
-        return fmtTimeSpan(ivl * 86400, short=True)
-    else:
-        return stattime(-ivl)
 
 
 def allRevsForCard(cid):
