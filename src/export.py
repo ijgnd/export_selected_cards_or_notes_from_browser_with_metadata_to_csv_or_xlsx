@@ -13,7 +13,10 @@ from anki.utils import (
     splitFields,
 )
 from aqt import mw
-from aqt.qt import *
+from aqt.qt import (
+    QAction,
+    QMenu,
+)
 from aqt.utils import (
     askUser,
     getSaveFile,
@@ -154,66 +157,98 @@ def add_column_names_for_notes_as_first_element(dol):
     return dol
 
 
-def onExportSelected(browser, filetype, keephtml, notesonly):
+def save_helper(browser, ftype, notesonly):
+    if notesonly and ftype == "csv":
+        out = getSaveDir(parent=browser,
+                title="Select Folder for csv files for exported notes",
+                identifier_for_last_user_selection="notesOnlyCsvExport")
+    nownow = now()
+    if notesonly and ftype == "xlsx":
+        out = getSaveFile(browser,
+                _("Export underyling notes from Browser to xlsx"),  # windowtitle
+                "export_notes_xlsx",  # dir_description - used to remember last user choice
+                _("Notes as xlsx"),  # key
+                '.xlsx',  # ext
+                'Anki_notes__%s.xlsx' % nownow)  # filename  # aqt.mw.pm.name
+    if not notesonly and ftype == "csv": 
+        out = getSaveFile(browser,
+                _("Export Selected From Browser to Csv"),  # windowtitle
+                "export_cards_csv",  # dir_description - used to remember last user choice
+                _("Cards as CSV"),  # key
+                '.csv',  # ext
+                'exportcsv___%s.csv' % nownow)  # filename
+    if not notesonly and ftype == "xlsx":
+        out = getSaveFile(browser,
+                _("Export Selected From Browser to Xlsx"),
+                "export_cards_xlsx",
+                _("Cards as Xlsx"),
+                '.xlsx',
+                'exportcsv___%s.xlsx' % nownow)
+    return out
+
+
+def exp(browser, ftype, keephtml, notesonly):
     cids = browser.selectedCards()
     if cids:
-        path = ""
-        msg = "Exporting many {} might take a while. Continue?".format("notes" if notesonly else "cards")
-        if askUser(msg, defaultno=True):
-            mw.progress.start(immediate=True)
+        msg = f'Exporting many {"notes" if notesonly else "cards"} might take a while. Continue?'
+        if not askUser(msg, defaultno=True):
+            return
+        save_path = save_helper(browser, ftype, notesonly)
+        if not save_path:
+            return
+        mw.progress.start(immediate=True)
         try:
-            nownow = now()
             if notesonly:
                 rows_by_model_raw = get_notes_info(sorted(cids), keephtml)
                 if gc("row_on_top_has_column_names"):
                     rows_by_model_raw = add_column_names_for_notes_as_first_element(rows_by_model_raw)
-                if filetype == "csv":
-                    dir = getSaveDir(parent=browser,
-                                     title="Select Folder for csv files for exported notes",
-                                     identifier_for_last_user_selection="notesOnlyCsvExport")
-                    if dir:
-                        rows_by_model = uniquify_clean_model_names_in_dict(rows_by_model_raw, False)
-                        write_to_multiple_csvs(dir, rows_by_model)
-                    path = dir
-                elif filetype == "xlsx":
-                    path = getSaveFile(browser,
-                                       _("Export underyling notes from Browser to xlsx"),  # windowtitle
-                                       "export_notes_xlsx",  # dir_description - used to remember last user choice
-                                       _("Notes as xlsx"),  # key
-                                       '.xlsx',  # ext
-                                       'Anki_notes__%s.xlsx' % nownow)  # filename  # aqt.mw.pm.name
-                    if path:
-                        rows_by_model = uniquify_clean_model_names_in_dict(rows_by_model_raw, True)
-                        write_to_multiworksheeet_xlsx(path, rows_by_model)
+                if ftype == "csv":
+                    rows_by_model = uniquify_clean_model_names_in_dict(rows_by_model_raw, False)
+                    write_to_multiple_csvs(save_path, rows_by_model)
+                elif ftype == "xlsx":
+                    rows_by_model = uniquify_clean_model_names_in_dict(rows_by_model_raw, True)
+                    write_to_multiworksheeet_xlsx(save_path, rows_by_model)
             else:
                 rows = info_for_cids_to_list_of_lists(browser, sorted(cids), keephtml)
-                if filetype == "csv":
-                    path = getSaveFile(browser,
-                                       _("Export Selected From Browser to Csv"),  # windowtitle
-                                       "export_cards_csv",  # dir_description - used to remember last user choice
-                                       _("Cards as CSV"),  # key
-                                       '.csv',  # ext
-                                       'exportcsv___%s.csv' % nownow)  # filename
-                    if path:
-                        write_rows_to_csv(path, rows, True)
-                elif filetype == "xlsx":
-                    path = getSaveFile(browser,
-                                       _("Export Selected From Browser to Xlsx"),
-                                       "export_cards_xlsx",
-                                       _("Cards as Xlsx"),
-                                       '.xlsx',
-                                       'exportcsv___%s.xlsx' % nownow)
-                    if path:
-                        workbook = xlsxwriter.Workbook(path)
-                        worksheet = workbook.add_worksheet()
-                        write_worksheet(workbook, worksheet, rows)
-                        workbook.close()
+                if ftype == "csv":
+                    write_rows_to_csv(save_path, rows, True)
+                elif ftype == "xlsx":
+                    workbook = xlsxwriter.Workbook(save_path)
+                    worksheet = workbook.add_worksheet()
+                    write_worksheet(workbook, worksheet, rows)
+                    workbook.close()
         finally:
             mw.progress.finish()
-            if path:
-                tooltip('Export to "%s" finished' % str(path), period=6000)
-            else:
-                tooltip('Error in Exporting Add-on. Aborting ...')
+            tooltip('Export to "%s" finished' % str(save_path), period=6000)
+
+
+# TODO
+menu_entries = {
+    "Export selected ...": {
+        "cards to ...": {
+            ".. to csv": {
+                # ftype, keephtml, notesonly
+                "keep html": ("csv", True, False),
+                "remove html": ("csv", False, False),
+                }, 
+            ".. to xlsx": {
+                "keep html": ("xlsx", True, False),
+                "remove html": ("xlsx", False, False),
+                },
+            },
+        "underlying notes of selected cards to ...":{
+            ".. to csv": {
+                "keep html": ("csv", True, True),
+                "remove html": ("csv", False, True),
+            }, 
+            ".. to xlsx": {
+                "keep html": ("xlsx", True, True),
+                "remove html": ("xlsx", False, True),
+            },
+        },  
+    },
+}
+
 
 
 def setupMenu(browser):
@@ -242,28 +277,28 @@ def setupMenu(browser):
 
 
     u = c_csv.addAction("keep html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "csv", True, False))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="csv", keephtml=True, notesonly=False))
 
     u = c_csv.addAction("remove html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "csv", False, False))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="csv", keephtml=False, notesonly=False))
 
     u = c_xls.addAction("keep html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "xlsx", True, False))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="xlsx", keephtml=True, notesonly=False))
 
     u = c_xls.addAction("remove html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "xlsx", False, False))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="xlsx", keephtml=False, notesonly=False))
 
 
     u = ncsv.addAction("keep html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "csv", True, True))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="csv", keephtml=True, notesonly=True))
 
     u = ncsv.addAction("remove html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "csv", False, True))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="csv", keephtml=False, notesonly=True))
 
     u = nxls.addAction("keep html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "xlsx", True, True))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="xlsx", keephtml=True, notesonly=True))
 
     u = nxls.addAction("remove html")
-    u.triggered.connect(lambda _, b=browser: onExportSelected(b, "xlsx", False, True))
+    u.triggered.connect(lambda _, b=browser: exp(b, ftype="xlsx", keephtml=False, notesonly=True))
 
 addHook("browser.setupMenus", setupMenu)
