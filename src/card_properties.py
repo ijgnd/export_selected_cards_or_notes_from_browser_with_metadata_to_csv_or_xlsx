@@ -13,9 +13,15 @@ from .helper_functions import (
 
 def current_card_deck_properties(card):
     if card.odid:
+        conf = mw.col.decks.confForDid(card.odid)
         source_deck_name = mw.col.decks.get(card.odid)['name']
     else:
+        conf = mw.col.decks.confForDid(card.did)
         source_deck_name = ""
+
+    formatted_steps = ''
+    for i in conf.get('new', {}).get('delays', []):
+        formatted_steps += ' -- ' + mw.col.backend.format_time_span(i * 60)
 
     #############
     # from anki.stats.py
@@ -68,13 +74,6 @@ def current_card_deck_properties(card):
     p["now"] = time.strftime('%Y-%m-%d %H:%M', time.localtime(card.id/1000))
 
     # Deck Options
-    if card.odid:
-        conf = mw.col.decks.confForDid(card.odid)
-    else:
-        conf = mw.col.decks.confForDid(card.did)
-    formatted_steps = ''
-    for i in conf['new']['delays']:
-        formatted_steps += ' -- ' + mw.col.backend.format_time_span(i * 60)
     p["conf"] = conf
     p["d_OptionGroupID"] = conf['id']
     p["d_OptionGroupName"] = conf['name']
