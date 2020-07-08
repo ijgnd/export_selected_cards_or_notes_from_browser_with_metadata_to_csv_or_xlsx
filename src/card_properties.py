@@ -10,6 +10,8 @@ from .helper_functions import (
     valueForOverdue, 
 )
 
+from .config import gc
+
 
 def current_card_deck_properties(card):
     if card.odid:
