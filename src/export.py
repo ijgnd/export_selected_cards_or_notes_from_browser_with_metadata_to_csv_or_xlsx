@@ -16,6 +16,7 @@ from aqt import mw
 from aqt.qt import (
     QAction,
     QMenu,
+    Qt,
 )
 from aqt.utils import (
     askUser,
@@ -29,6 +30,7 @@ from .libs import xlsxwriter
 
 from .config import gc
 from .card_properties import current_card_deck_properties
+from .gpl import RowAndColumn
 from .helper_functions import (
     now,
     getSaveDir,
@@ -222,39 +224,116 @@ def exp(browser, ftype, keephtml, notesonly):
             tooltip('Export to "%s" finished' % str(save_path), period=6000)
 
 
-# TODO
-menu_entries = {
-    "Export selected ...": {
-        "cards to ...": {
-            ".. to csv": {
-                # ftype, keephtml, notesonly
-                "keep html": ("csv", True, False),
-                "remove html": ("csv", False, False),
-                }, 
-            ".. to xlsx": {
-                "keep html": ("xlsx", True, False),
-                "remove html": ("xlsx", False, False),
-                },
-            },
-        "underlying notes of selected cards to ...":{
-            ".. to csv": {
-                "keep html": ("csv", True, True),
-                "remove html": ("csv", False, True),
-            }, 
-            ".. to xlsx": {
-                "keep html": ("xlsx", True, True),
-                "remove html": ("xlsx", False, True),
-            },
-        },  
-    },
-}
 
+
+def exp_brows_visi(browser, ftype, keephtml):
+
+    save_path = save_helper(browser, ftype, notesonly=False)
+    if not save_path:
+        return
+
+    # mw.progress.start(immediate=True)
+    rows = []  # list of lists
+
+    # write header
+    thisrow = []
+
+    # order of visible cols is saved/restored with restoreHeader(hh, "editor") which calls saveState/restoreState
+    # https://doc.qt.io/qt-5/qheaderview.html#visualIndex
+    # visualIndex
+
+    m = browser.model
+    tv = browser.form.tableView
+    hh = tv.horizontalHeader()
+    columns_type_visualPos = {}
+    columns_type_displayName = {}
+    visible_column_count = m.columnCount(0)
+    
+    thisrow = ["" for i in range(visible_column_count)]
+    for i in range(visible_column_count):
+        typ = m.columnType(i)
+        vidx = hh.visualIndex(i)
+        columns_type_visualPos[typ] = vidx
+        name = m.headerData(i, Qt.Horizontal, Qt.DisplayRole)
+        columns_type_displayName[typ] = name
+        thisrow[vidx] = name
+    rows.append(thisrow)
+
+    for r in browser.form.tableView.selectionModel().selectedRows():
+        """
+        type(r) = PyQt5.QtCore.QModelIndex
+        type(r.row()) = int
+        """
+        thisrow = ["" for i in range(visible_column_count)]
+        this_card_field_names = None
+        for cidx in range(visible_column_count):
+            typ = m.columnType(cidx)
+            vidx = columns_type_visualPos[typ]
+            field_content = ""
+            if keephtml and (typ.startswith('_field_') or typ == "noteFld"):
+                if not this_card_field_names:
+                    cid = browser.model.cards[r.row()]
+                    thiscard = browser.col.getCard(cid)
+                    note_type = thiscard.note_type()
+                    this_card_field_names = browser.mw.col.models.fieldNames(note_type)
+                    note = thiscard.note()
+                if typ == "noteFld":
+                    field_content = note.fields[browser.mw.col.models.sortIdx(note_type)]
+                else:
+                    for fidx, fname in enumerate(this_card_field_names):
+                        if fname in typ:
+                            field_content = note.fields[fidx]
+                content = field_content
+            else:
+                item_index = RowAndColumn(r.row(), cidx)
+                content = browser.model.columnData(item_index)
+            thisrow[vidx] = content
+        rows.append(thisrow)
+
+    if ftype == "csv":
+        write_rows_to_csv(save_path, rows, True)
+    elif ftype == "xlsx":
+        workbook = xlsxwriter.Workbook(save_path)
+        worksheet = workbook.add_worksheet()
+        write_worksheet(workbook, worksheet, rows)
+        workbook.close()
+
+    mw.progress.finish()
+    tooltip('Export to "%s" finished' % str(save_path), period=6000)
 
 
 def setupMenu(browser):
-    m = QMenu("Export selected ...", browser)
-    browser.form.menuEdit.addMenu(m)
+    o = QMenu("Export selected ...", browser)
+    browser.form.menuEdit.addMenu(o)
 
+
+    s = QMenu("cards with columns shown", browser)
+    o.addMenu(s)
+
+
+    s_csv = QMenu(".. to csv", browser)
+    s.addMenu(s_csv)
+
+    s_xls = QMenu(".. to xlsx", browser)
+    s.addMenu(s_xls)
+
+    u = s_csv.addAction("keep html")
+    u.triggered.connect(lambda _, b=browser: exp_brows_visi(b, ftype="csv", keephtml=True))
+
+    u = s_csv.addAction("remove html")
+    u.triggered.connect(lambda _, b=browser: exp_brows_visi(b, ftype="csv", keephtml=False))
+
+    u = s_xls.addAction("keep html")
+    u.triggered.connect(lambda _, b=browser: exp_brows_visi(b, ftype="xlsx", keephtml=True))
+
+    u = s_xls.addAction("remove html")
+    u.triggered.connect(lambda _, b=browser: exp_brows_visi(b, ftype="xlsx", keephtml=False))
+
+
+
+
+    m = QMenu("according to add-on settings", browser)
+    o.addMenu(m)
 
     c = QMenu("cards to ...", browser)
     m.addMenu(c)

@@ -21,7 +21,18 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-This file incorporates work (xlsxwriter) covered by the following copyright and  
+
+This add-on uses the file gpl.py covered by the following copyright and  
+permission notice:
+
+    License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+    Copyright: Steve AW <steveawa@gmail.com>
+               fickle_123@hotmail.com
+
+
+
+
+This add-on incorporates work (xlsxwriter) covered by the following copyright and  
 permission notice:
 
     XlsxWriter is released under a BSD license.
