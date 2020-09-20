@@ -1,5 +1,6 @@
 import csv
 import datetime
+import io
 import os
 
 from .libs import xlsxwriter
@@ -22,7 +23,7 @@ def write_to_multiworksheeet_xlsx(path, rows_by_model):
 
 
 def write_rows_to_csv(path, list_of_rows, iscards):
-    with open(path, "w") as file:
+    with io.open(path, "w", encoding="utf-8") as file:
         """
 - `format_csv_dialect`: You can set 'excel', 'excel-tab', 'unix'.
 - `format_csv_delimiter`: if empty uses the default delimiter of the selectd dialect. Must be
