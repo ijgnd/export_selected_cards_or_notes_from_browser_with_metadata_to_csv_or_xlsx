@@ -5,6 +5,7 @@ import os
 import time
 
 from anki.lang import _
+from anki.utils import pointVersion
 from aqt import mw
 from aqt.utils import showInfo
 from aqt.qt import *
@@ -86,3 +87,11 @@ def getSaveDir(parent, title, identifier_for_last_user_selection):
 def now():    #time
     CurrentDT=datetime.datetime.now()
     return CurrentDT.strftime("%Y-%m-%dT%H-%M-%S")
+
+
+def timespan(t):
+    """for change from https://github.com/ankitects/anki/commit/89dde3aeb0c1f94b912b3cb2659ec0d4bffb4a1c"""
+    if pointVersion() < 28:
+        return mw.col.backend.format_time_span(t)
+    else:
+        return mw.col.format_timespan()
