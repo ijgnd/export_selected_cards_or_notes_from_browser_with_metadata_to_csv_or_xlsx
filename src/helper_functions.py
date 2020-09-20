@@ -94,4 +94,4 @@ def timespan(t):
     if pointVersion() < 28:
         return mw.col.backend.format_time_span(t)
     else:
-        return mw.col.format_timespan()
+        return mw.col.format_timespan(t)
